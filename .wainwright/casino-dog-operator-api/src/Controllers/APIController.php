@@ -31,17 +31,17 @@ class APIController
             $game_software = $explode_game[0];
             $game_raw = $explode_game[1];
             //$img_url = 'https://win.radio.fm/api/image/'.$game_software.'/'.$game_raw.'.webp';
-            $img_url = 'https://wainwrighted.herokuapp.com/https://d1sc13y7hrlskd.cloudfront.net/optimized_images/landscape/'.$game_software.'/'.$game_raw.'.webp';
+            $img_url = 'https://cdn.igaming.click/d1sc13y7hrlskd.cloudfront.net/optimized_images/landscape/'.$game_software.'/'.$game_raw.'.webp';
             if($game->provider === 'netent') {
-                $img_url = 'https://wainwrighted.herokuapp.com/https://cdn.softswiss.net/i/s2/'.$game_software.'/'.$game_raw.'.png';
+                $img_url = 'https://cdn.igaming.click/cdn.softswiss.net/i/s2/'.$game_software.'/'.$game_raw.'.png';
             }
             if($game->provider === 'playngo') {
-                $img_url = 'https://wainwrighted.herokuapp.com/https://cdn.softswiss.net/i/s2/'.$game_software.'/'.$game_raw.'.png';
+                $img_url = 'https://cdn.igaming.click/cdn.softswiss.net/i/s2/'.$game_software.'/'.$game_raw.'.png';
             }
 
             //$img_url = 'https://cdn.softswiss.net/i/s2/'.$game_software.'/'.$game_raw.'.png';
         } else {
-            $img_url = 'https://wainwrighted.herokuapp.com/https://parimatch.co.tz/service-discovery/service/pm-casino/img/tr:n-slots_game_image_desktop/Casino/eva/games/'.$game->gid.'.png';
+            $img_url = 'https://cdn.igaming.click/parimatch.co.tz/service-discovery/service/pm-casino/img/tr:n-slots_game_image_desktop/Casino/eva/games/'.$game->gid.'.png';
 
             //$img_url = 'http://kohengroup.com/thumbnail/i-9102777/'.$game->gid.'.png';
         }
@@ -82,15 +82,15 @@ class APIController
         if(isset($explode_game[1])) {
             $game_software = $explode_game[0];
             $game_raw = $explode_game[1];
-            $img_url = 'https://wainwrighted.herokuapp.com/https://d1sc13y7hrlskd.cloudfront.net/optimized_images/landscape/'.$game_software.'/'.$game_raw.'.webp';
+            $img_url = 'https://cdn.igaming.click/d1sc13y7hrlskd.cloudfront.net/optimized_images/landscape/'.$game_software.'/'.$game_raw.'.webp';
             if($game->provider === 'netent') {
-                $img_url = 'https://wainwrighted.herokuapp.com/https://cdn.softswiss.net/i/s2/'.$game_software.'/'.$game_raw.'.png';
+                $img_url = 'https://cdn.igaming.click/cdn.softswiss.net/i/s2/'.$game_software.'/'.$game_raw.'.png';
             }
             if($game->provider === 'playngo') {
-                $img_url = 'https://wainwrighted.herokuapp.com/https://cdn.softswiss.net/i/s2/'.$game_software.'/'.$game_raw.'.png';
+                $img_url = 'https://cdn.igaming.click/cdn.softswiss.net/i/s2/'.$game_software.'/'.$game_raw.'.png';
             }
         } else {
-            $img_url = 'https://wainwrighted.herokuapp.com/https://parimatch.co.tz/service-discovery/service/pm-casino/img/tr:n-slots_game_image_desktop/Casino/eva/games/'.$game->gid.'.png';
+            $img_url = 'https://cdn.igaming.click/parimatch.co.tz/service-discovery/service/pm-casino/img/tr:n-slots_game_image_desktop/Casino/eva/games/'.$game->gid.'.png';
         }
 
         $tags = array($game->type);

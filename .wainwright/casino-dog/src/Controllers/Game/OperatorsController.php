@@ -41,12 +41,27 @@ class OperatorsController
 	}
 
 	public static function verifyKey($key, $ip) {
-		$find = OperatorAccess::where('operator_key', $key)->first();
+		$find = OperatorAccess::where('operator_key', $key)
+			->where('active', 1)
+			->first();
+
 		if(!$find) {
 			return false;
 		}
-		$response = array('status' => 'success', 'data' => $find);
-		return $response;
+
+		if($find->operator_access === 'internal') {
+			return array('status' => 'success', 'data' => $find);
+		}
+
+		if(!filter_var($find->operator_access, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+			return false;
+		}
+
+		if((string) $find->operator_access !== (string) $ip) {
+			return false;
+		}
+
+		return array('status' => 'success', 'data' => $find);
 	}
 
 	public static function operatorPing($key, $ip) {

@@ -63,11 +63,11 @@ class Gameslist extends Eloquent  {
 		$game['id'] = $count;
                 $random_popularity = ($random / 100) * $percent;
                 $game['popularity'] = (int) number_format($random_popularity, 0, '.', '');
-                $game['image'] = 'https://static-2.herokuapp.com/pm_i/'.$game['gid'].'.png';
+                $game['image'] = 'https://cdn.igaming.click/static-2.herokuapp.com/pm_i/'.$game['gid'].'.png';
             } else {
 		$game['id'] = $count;
 		$game['popularity'] = (int) $game['popularity'];
-                $game['image'] = 'https://static-2.herokuapp.com/ss_i/s3/'.$game['gid'].'.png';
+                $game['image'] = 'https://cdn.igaming.click/static-2.herokuapp.com/ss_i/s3/'.$game['gid'].'.png';
             }
 	    $count++;
             $games[] = $game;

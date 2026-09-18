@@ -21,8 +21,32 @@ class RelaxgamingSessions extends RelaxgamingMain
             $game_id = isset($query['gameid']) ? $query['gameid'] : $query['productId'];
             $game_id2 = str_replace('ways', 'pays',$game_id);
             $origin_url = 'https://d3nsdzdtjbr5ml.cloudfront.net/casino/games-mt/'.$game_id.'/index.html?lang=en_US&gameid='.$game_id.'&jurisdiction=MT&gameurl=&apex=1&channel=web&moneymode=fun&partnerid=1&fullscreen=false';
-            $html = Http::get('https://ns-2b7l.onrender.com/'.$origin_url);
-            $base_href = 'https://ns-2b7l.onrender.com/https://d3nsdzdtjbr5ml.cloudfront.net/casino/games-mt/'.$game_id.'/';
+            try {
+                $response = Http::connectTimeout(5)
+                    ->timeout(12)
+                    ->retry(1, 250)
+                    ->get($origin_url);
+
+                if (!$response->successful()) {
+                    throw new \RuntimeException('Relax origin HTTP '.$response->status());
+                }
+
+                $html = $response->body();
+                $base_href = 'https://d3nsdzdtjbr5ml.cloudfront.net/casino/games-mt/'.$game_id.'/';
+            } catch (\Throwable $e) {
+                $proxy_url = 'https://ns-2b7l.onrender.com/'.$origin_url;
+
+                $response = Http::connectTimeout(5)
+                    ->timeout(12)
+                    ->get($proxy_url);
+
+                if (!$response->successful()) {
+                    throw new \RuntimeException('Relax proxy HTTP '.$response->status());
+                }
+
+                $html = $response->body();
+                $base_href = 'https://ns-2b7l.onrender.com/https://d3nsdzdtjbr5ml.cloudfront.net/casino/games-mt/'.$game_id.'/';
+            }
             $data = [
                 'origin_url' => $origin_url,
                 'base_href' => $base_href, 

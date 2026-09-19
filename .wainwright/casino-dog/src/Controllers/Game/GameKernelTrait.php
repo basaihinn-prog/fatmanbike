@@ -143,11 +143,19 @@ trait GameKernelTrait
     }
 
     public function save_game_respins_template($gid, $game_data, $game_type) {
+        if (!config('casino-dog.allow_result_mutation', false)) {
+            return false;
+        }
+
         $kernel = new GameRespinTemplate();
         return $kernel->save_game_template($gid, $game_data, $game_type);
     }
 
     public function retrieve_game_respins_template($gid, $game_type) {
+        if (!config('casino-dog.allow_result_mutation', false)) {
+            return null;
+        }
+
         $kernel = new GameRespinTemplate();
         return $kernel->retrieve_game_template($gid, $game_type);
     }

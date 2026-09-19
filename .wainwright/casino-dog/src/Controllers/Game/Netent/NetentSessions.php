@@ -21,14 +21,26 @@ class NetentSessions extends NetentMain
     public function fresh_game_session($game_id, $method, $token_internal = NULL)
     {
         if($method === 'demo_method') {
-            $demo_link = $this->get_game_demolink($game_id);
-            $game_id = $this->in_between("netent\/", "\/", $demo_link);
-            $build_url = env('APP_URL').'/prelauncher_netent?game='.$game_id.'&token='.$token_internal;
-            $data = [
+            $demo_link = (string) $this->get_game_demolink($game_id);
+            $parsed_game_id = $this->in_between("netent\\/", "\\/", $demo_link);
+
+            if (!$parsed_game_id) {
+                $parsed_game_id = $this->in_between('netent/', '/', $demo_link);
+            }
+
+            if (!$parsed_game_id) {
+                $parsed_game_id = $game_id;
+            }
+
+            $build_url = rtrim(env('APP_URL'), '/')
+                .'/prelauncher_netent?game='.urlencode($parsed_game_id)
+                .'&token='.urlencode($token_internal);
+
+            return [
                 'link' => $build_url,
             ];
-            return $data;
         }
+
         // Add in additional grey methods here, specify the method on the internal session creation when a session is requested, don't split this here
         return 'generateSessionToken() method not supported';
     }

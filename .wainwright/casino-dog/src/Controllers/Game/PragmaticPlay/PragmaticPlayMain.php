@@ -41,8 +41,6 @@ class PragmaticPlayMain extends GameKernel
     */
     public function game_event(Request $request) {
         $event = new PragmaticPlayGame();
-        $response = $event->game_event($request);
-        $debug = app()->hasDebugModeEnabled();
 
         return $event->game_event($request);
     }
@@ -202,8 +200,7 @@ class PragmaticPlayMain extends GameKernel
         $new_api_endpoint = config('casino-dog.games.pragmaticplay.new_api_endpoint').$token_internal.'/';
         /* Replacing HTML content of original game */
         $gc = $game_content;
-	$cors_proxy = config('casino-dog.cors_anywhere');
-        $gc = str_replace('"gameService":"https://demogames.pragmaticplay.net/', '"gameService":"'.$new_api_endpoint, $gc);
+$gc = str_replace('"gameService":"https://demogames.pragmaticplay.net/', '"gameService":"'.$new_api_endpoint, $gc);
         $gc = str_replace('"gameService":"https://demogamesfree.pragmaticplay.net/', '"gameService":"'.$new_api_endpoint, $gc);
         $gc = str_replace('"gameService":"https://rarenew-dk4.pragmaticplay.net/', '"gameService":"'.$new_api_endpoint, $gc);
 

@@ -20,6 +20,11 @@ class HacksawMain extends GameKernel
         $token = $data['token_internal'];
         $session = new HacksawSessions();
         $game_content = $session->create_session($token);
+
+        if ($game_content === false || $game_content === null || $game_content === '') {
+            return false;
+        }
+
         return $this->game_launch($game_content);
     }
 

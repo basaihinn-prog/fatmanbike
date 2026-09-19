@@ -30,7 +30,7 @@ class CasinoDogCreateSessionController
         return Http::connectTimeout(3)
             ->timeout(10)
             ->retry(1, 150)
-            ->get($this->endpoint_create_session, [
+            ->post($this->endpoint_create_session, [
                 'game' => $game_slug,
                 'player' => $player_id,
                 'currency' => $currency,

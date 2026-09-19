@@ -16,18 +16,41 @@ class OaksSessions extends OaksMain
     public function fresh_game_session($game_id, $method, $token_internal = NULL)
     {
         if($method === 'demo_method') {
-            $demo_link = $this->get_game_demolink($game_id);
+            $demo_link = (string) $this->get_game_demolink($game_id);
             $parse_query = $this->parse_query($demo_link);
-            $build_url = 'https://3oaks.com/api/v1/games/'.$parse_query['productId'].'/play?lang=en';
-            $html = Http::get($build_url);
-            $token = $this->in_between('token": "', '"', $html);
+            $product_id = $parse_query['productId'] ?? null;
 
-            $data = [
+            if (!$product_id) {
+                return false;
+            }
+
+            $build_url = 'https://3oaks.com/api/v1/games/'.rawurlencode($product_id).'/play?lang=en';
+            $html = Http::connectTimeout(5)
+                ->timeout(20)
+                ->retry(1, 250)
+                ->get($build_url);
+
+            if (!$html->successful() || trim($html->body()) === '') {
+                return false;
+            }
+
+            $body = $html->body();
+            $token = $this->in_between('token": "', '"', $body);
+
+            if (!$token) {
+                $decoded = json_decode($body, true);
+                $token = is_array($decoded) ? ($decoded['token'] ?? null) : null;
+            }
+
+            if (!$token) {
+                return false;
+            }
+
+            return [
                 'token' => $token,
-                'html' => $html,
+                'html' => $body,
                 'link' => $build_url,
             ];
-            return $data;
         }
         // Add in additional grey methods here, specify the method on the internal session creation when a session is requested, don't split this here
         return 'generateSessionToken() method not supported';
@@ -56,6 +79,11 @@ class OaksSessions extends OaksMain
 
 
         $game = $this->fresh_game_session($game_id, 'demo_method', $token_internal);
+
+        if ($game === false) {
+            return false;
+        }
+
         $update_session = $this->update_session($internal_token, 'token_original', $game['token']);
         $html_content_modify = $this->modify_game($token_internal, $game['html']);
 

@@ -21,6 +21,9 @@ class PragmaticPlayGame extends PragmaticPlayMain
         $internal_token = $request->internal_token;
         $action = $request->action;
         $parent_session = $this->get_internal_session($internal_token);
+        if(($parent_session['status'] ?? 0) !== 200) {
+            return 'unlogged';
+        }
 
         if($action === 'reloadBalance.do') {
             return $this->reloadBalance($internal_token, $request);
@@ -79,8 +82,14 @@ class PragmaticPlayGame extends PragmaticPlayMain
         //$query['gameInfo'] = '{props:{max_rnd_sim:"19230769",max_rnd_hr:"1",max_rnd_win:"200"}}';
         $query['cfgs'] = '2523';
 
-        $bridge_init = str_replace('mgckey', 'mgckey='.$bridged_session_token.'&old_mgckey=', $request->getContent());
-        $bridge_send = $this->curl_cloned_request($internal_token, $bridge_init, $request);
+        $bridge_params = [];
+        parse_str($request->getContent(), $bridge_params);
+        if(isset($bridge_params['mgckey'])) {
+            $bridge_params['old_mgckey'] = $bridge_params['mgckey'];
+        }
+        $bridge_params['mgckey'] = $bridged_session_token;
+        $bridge_init = http_build_query($bridge_params);
+        $this->curl_cloned_request($internal_token, $bridge_init, $request);
         $query = $this->build_response_query($query);
 
 
@@ -275,7 +284,11 @@ class PragmaticPlayGame extends PragmaticPlayMain
 
     public function parse_query($query_string)
     {
-        parse_str($query_string, $q_arr);
+        if($query_string instanceof \Illuminate\Http\Client\Response) {
+            $query_string = $query_string->body();
+        }
+
+        parse_str((string) $query_string, $q_arr);
         return $q_arr;
     }
 
@@ -290,7 +303,7 @@ class PragmaticPlayGame extends PragmaticPlayMain
         $url_explode = explode($internal_token, $request->fullUrl());
         $url = 'https://demogamesfree.pragmaticplay.net'.$url_explode[1];
 
-        $response = Http::retry(1, 1500, function ($exception, $request) {
+        $response = Http::connectTimeout(5)->timeout(20)->retry(1, 1500, function ($exception, $request) {
             return $exception instanceof ConnectionException;
         })->withBody(
             $data, 'application/x-www-form-urlencoded'
@@ -306,7 +319,7 @@ class PragmaticPlayGame extends PragmaticPlayMain
         $url = 'https://demogamesfree.pragmaticplay.net'.$url_explode[1];
         $data = $request->getContent();
 
-        $response = Http::retry(1, 1500, function ($exception, $request) {
+        $response = Http::connectTimeout(5)->timeout(20)->retry(1, 1500, function ($exception, $request) {
             return $exception instanceof ConnectionException;
         })->withBody(
             $data, 'application/x-www-form-urlencoded'

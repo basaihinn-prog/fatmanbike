@@ -25,6 +25,10 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
 
+    'ably' => [
+        'client_key' => env('ABLY_CLIENT_KEY'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

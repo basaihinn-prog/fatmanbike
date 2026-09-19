@@ -200,7 +200,7 @@ class PragmaticPlayMain extends GameKernel
         $new_api_endpoint = config('casino-dog.games.pragmaticplay.new_api_endpoint').$token_internal.'/';
         /* Replacing HTML content of original game */
         $gc = $game_content;
-$gc = str_replace('"gameService":"https://demogames.pragmaticplay.net/', '"gameService":"'.$new_api_endpoint, $gc);
+        $gc = str_replace('"gameService":"https://demogames.pragmaticplay.net/', '"gameService":"'.$new_api_endpoint, $gc);
         $gc = str_replace('"gameService":"https://demogamesfree.pragmaticplay.net/', '"gameService":"'.$new_api_endpoint, $gc);
         $gc = str_replace('"gameService":"https://rarenew-dk4.pragmaticplay.net/', '"gameService":"'.$new_api_endpoint, $gc);
 
@@ -219,11 +219,9 @@ $gc = str_replace('"gameService":"https://demogames.pragmaticplay.net/', '"gameS
 
         $gc = str_replace('UA-83294317',  'UA-15294317', $gc);
         $gc = str_replace('//www.google-analytics.com/analytics.js', '/dynamic_asset/pragmaticplay/pragmatic-pusher.js', $gc);
-        $gc = str_replace('"datapath":"https://demogames.pragmaticplay.net/gs2c/common/', '"replaySystemContextPath":"/ReplayService","openHistoryInWindow":false, "multiProductMiniLobby":false, "currencyOriginal": "USD", "instantFrbUpdateSeconds": 180, "lobbyLaunched":false, "instantFrbEnabled":true, "amountType": "COIN", "miniLobby": true, "region": "Other", "ingameLobbyApiURL":"/dynamic_asset/pragmaticplay/minilobby.json", "historyType":"internal", "miniLobby":true, "styleName":"avnt_aventonv", "integrationType":"HTTP","sessionTimeout":"9999","openHistoryInTab":true,"datapath":"'.$cors_proxy, $gc);
-        $gc = str_replace('"datapath":"https://demogamesfree.pragmaticplay.net/gs2c/common/', '"replaySystemContextPath":"/ReplayService","openHistoryInWindow":false, "multiProductMiniLobby":false, "currencyOriginal": "USD", "instantFrbUpdateSeconds": 180, "lobbyLaunched":false, "instantFrbEnabled":true, "amountType": "COIN", "miniLobby": true, "region": "Other", "ingameLobbyApiURL":"/dynamic_asset/pragmaticplay/minilobby.json", "historyType":"internal", "miniLobby":true, "styleName":"avnt_aventonv", "integrationType":"HTTP","sessionTimeout":"9999","openHistoryInTab":true,"datapath":"'.$cors_proxy.'https://softswiss.pragmaticplay.net/gs2c/common/', $gc);
+        $gc = str_replace('"datapath":"https://demogames.pragmaticplay.net/gs2c/common/', '"replaySystemContextPath":"/ReplayService","openHistoryInWindow":false, "multiProductMiniLobby":false, "currencyOriginal": "USD", "instantFrbUpdateSeconds": 180, "lobbyLaunched":false, "instantFrbEnabled":true, "amountType": "COIN", "miniLobby": true, "region": "Other", "ingameLobbyApiURL":"/dynamic_asset/pragmaticplay/minilobby.json", "historyType":"internal", "miniLobby":true, "styleName":"avnt_aventonv", "integrationType":"HTTP","sessionTimeout":"9999","openHistoryInTab":true,"datapath":"'."https://demogames.pragmaticplay.net/gs2c/common/", $gc);
+        $gc = str_replace('"datapath":"https://demogamesfree.pragmaticplay.net/gs2c/common/', '"replaySystemContextPath":"/ReplayService","openHistoryInWindow":false, "multiProductMiniLobby":false, "currencyOriginal": "USD", "instantFrbUpdateSeconds": 180, "lobbyLaunched":false, "instantFrbEnabled":true, "amountType": "COIN", "miniLobby": true, "region": "Other", "ingameLobbyApiURL":"/dynamic_asset/pragmaticplay/minilobby.json", "historyType":"internal", "miniLobby":true, "styleName":"avnt_aventonv", "integrationType":"HTTP","sessionTimeout":"9999","openHistoryInTab":true,"datapath":"'https://softswiss.pragmaticplay.net/gs2c/common/', $gc);
 
-        $gc = str_replace('"datapath":"https://rarenew-dk4.pragmaticplay.net', '"datapath":"https://wainwrighted.herokuapp.com', $gc);
-        $gc = str_replace('https://rarenew-dk4.pragmaticplay.net', 'https://wainwrighted.herokuapp.com/https://rarenew-dk4.pragmaticplay.net', $gc);
 
         $gc = str_replace('demoMode":"1"',  'demoMode":"0"', $gc);
         return $gc;

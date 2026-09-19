@@ -80,7 +80,7 @@ class OperatorsController
 			$http = Http::timeout(5)->get($find->callback_url, $query);
 			$pong_hash = hash_hmac('md5', $find->operator_secret, $salt_sign);
 			$pong_hash_return = $http['data']['pong'];
-			if($pong_hash !== $pong_hash_return) {
+			if(!is_string($pong_hash_return) || !hash_equals($pong_hash, $pong_hash_return)) {
 				save_log('OperatorsController()', 'Error ping, secret hash has does not allign', json_encode(array('Ping' => $pong_hash, 'Pong return' => $pong_hash_return)));
 				return false;
 			}

@@ -37,17 +37,20 @@ class CasinoDogCallbackController
 
     public function verify_sign($sign, $salt, $request)
     {
-        $create_signature = hash_hmac('md5', $this->operator_secret, $salt); //recreate the signature
-
-        if($create_signature === $sign) {
-            return true;
-        } else {
-            Log::notice('Wrong security signature on callback. '.json_encode($request->all()));
-            die();
-
+        if (!is_string($sign) || !is_string($salt) || $sign === '' || $salt === '') {
+            return false;
         }
 
+        $create_signature = hash_hmac('md5', (string) $this->operator_secret, $salt);
 
+        if (!hash_equals($create_signature, $sign)) {
+            Log::notice('Wrong security signature on callback.', [
+                'action' => $request->action,
+            ]);
+            return false;
+        }
+
+        return true;
     }
 
     public function pong(Request $request)
@@ -64,6 +67,10 @@ class CasinoDogCallbackController
 
     public function balance(Request $request)
     {
+        if (!$this->verify_sign($request->sign, $request->salt_sign, $request)) {
+            abort(403, 'Invalid callback signature.');
+        }
+
         $player = new PlayerBalances;
         $select_player = $player->select_player($request->player_operator_id, $request->currency);
 
@@ -81,7 +88,9 @@ class CasinoDogCallbackController
         //Log::notice(json_encode($request->all()));
         $player = new PlayerBalances;
 
-        $this->verify_sign($request->sign, $request->salt_sign, $request);
+        if (!$this->verify_sign($request->sign, $request->salt_sign, $request)) {
+            abort(403, 'Invalid callback signature.');
+        }
 
         $balance_after_game = $player->process_game($request->player_operator_id, $request->bet, $request->win, $request->currency, $request->game, $request->all());
         $select_player = $player->select_player($request->player_operator_id, $request->currency);

@@ -189,7 +189,7 @@ class MascotMain extends GameKernel
         $gc = $game_content;
         $gc = str_replace('window.serverUrl="', 'window.serverUrl="'.$new_api_endpoint.'?origin_url=', $gc);
         $gc = str_replace('window.currency="NAN"', 'window.currency="USD"', $gc);
-        $gc = str_replace('base href="https://static.mascot.games', 'base href="https://ns-2b7l.onrender.com/https://static.mascot.games', $gc);
+        // Keep Mascot static assets on the provider CDN; do not route them through a third-party proxy.
 
         
         return $gc;

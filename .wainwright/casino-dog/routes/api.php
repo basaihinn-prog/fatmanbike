@@ -7,7 +7,7 @@ use Wainwright\CasinoDog\Controllers\Testing\TestingController;
 use Wainwright\CasinoDog\Controllers\InstallController;
 
 Route::middleware('api', 'throttle:2400,1')->prefix('api')->group(function () {
-    Route::get('/createSession', [APIController::class, 'createSessionEndpoint']);
+    Route::match(['get', 'post'], '/createSession', [APIController::class, 'createSessionEndpoint']);
     Route::get('/createSessionAndRedirect', [APIController::class, 'createSessionAndRedirectEndpoint']);
     Route::get('/createSessionIframed', [APIController::class, 'createSessionIframed']);
     if (config('casino-dog.allow_result_mutation', false)) {

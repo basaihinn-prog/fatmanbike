@@ -17,13 +17,24 @@ class HabaneroSessions extends HabaneroMain
     {
         if($method === 'demo_method') {
             $url = $this->get_game_demolink($game_id);
-            $html_content = Http::get($url);
-            
-            $data = [
-                'origin_session' => NULL, //change this if you are catching the "real" game session token from html content and want to store it to parent session
-                'html' => $html_content,
+
+            if (!$url) {
+                return false;
+            }
+
+            $html_content = Http::connectTimeout(5)
+                ->timeout(20)
+                ->retry(1, 250)
+                ->get($url);
+
+            if (!$html_content->successful() || trim($html_content->body()) === '') {
+                return false;
+            }
+
+            return [
+                'origin_session' => null,
+                'html' => $html_content->body(),
             ];
-            return $data;
         }
         
         /* example continued play session *
@@ -51,6 +62,10 @@ class HabaneroSessions extends HabaneroMain
         $game_id = $select_session['data']['game_id_original'];
 
         $game = $this->fresh_game_session($game_id, 'demo_method', $internal_token);
+
+        if ($game === false) {
+            return false;
+        }
 
         /* example continued play (connect to existing game session)
             // Please check Mascot/MascotSessions.php for examples on continued play (re-connecting existing sessions).

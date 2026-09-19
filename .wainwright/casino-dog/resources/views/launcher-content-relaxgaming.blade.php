@@ -1,6 +1,8 @@
 @if(!isset($_GET['jurisdiction']))
     @php
-        $url = "g?".$_SERVER['QUERY_STRING'].'&jurisdiction=MT&channel=web&partnerid=1&apex=0&lang=en_US&moneymode=fun&configurl=https://scoobiedog.casinoman.app/dynamic_asset/relax/getclientconfig_'.$_GET['token'].'_'.$game_content['origin_gameid'].'&gameurl=&gameid='.$game_content['origin_gameid'];
+        $baseUrl = rtrim(config('casino-dog.domain', config('app.url')), '/');
+        $configUrl = $baseUrl.'/dynamic_asset/relax/getclientconfig_'.$_GET['token'].'_'.$game_content['origin_gameid'];
+        $url = "g?".$_SERVER['QUERY_STRING'].'&jurisdiction=MT&channel=web&partnerid=1&apex=0&lang=en_US&moneymode=fun&configurl='.urlencode($configUrl).'&gameurl=&gameid='.$game_content['origin_gameid'];
         header("HTTP/1.1 301 Moved Permanently");
         header('Location: '.$url);
         die();

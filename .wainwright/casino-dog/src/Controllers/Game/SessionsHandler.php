@@ -95,12 +95,43 @@ class SessionsHandler extends GameKernel
         }
 
         $game_controller = new $game_controller;
-        $request_game_session = $game_controller->load_game_session($final_session_data);
+
+        try {
+            $request_game_session = $game_controller->load_game_session($final_session_data);
+        } catch (\Throwable $providerException) {
+            Log::error('Game launch provider exception', [
+                'provider' => $select_extra_meta['provider'] ?? null,
+                'game_id' => $final_session_data['game_id_original'] ?? null,
+                'session_state' => $final_session_data['state'] ?? null,
+                'exception' => $providerException->getMessage(),
+                'file' => $providerException->getFile(),
+                'line' => $providerException->getLine(),
+            ]);
+
+            self::sessionFailed($token);
+
+            return CasinoDog::errorRouting(
+                400,
+                'Game launch failed for provider '.$select_extra_meta['provider'].'.'
+            );
+        }
+
         header('Access-Control-Allow-Origin: *');
         //header('X-Frame-Options: SAMEORIGIN');
-        if($request_game_session === false) {
+
+        if($request_game_session === false || $request_game_session === null || $request_game_session === '') {
+            Log::error('Game launch provider returned empty response', [
+                'provider' => $select_extra_meta['provider'] ?? null,
+                'game_id' => $final_session_data['game_id_original'] ?? null,
+                'session_state' => $final_session_data['state'] ?? null,
+            ]);
+
             self::sessionFailed($token);
-            return CasinoDog::errorRouting(400, 'Error trying to retrieve origin game, please refresh.');
+
+            return CasinoDog::errorRouting(
+                400,
+                'Game launch failed for provider '.$select_extra_meta['provider'].'.'
+            );
         }
 
         if($game_launcher_behaviour === 'redirect') {
@@ -119,10 +150,26 @@ class SessionsHandler extends GameKernel
             $casino_dog->save_log('SessionsHandler()', 'Unsupported launcher configuration, set to either internal_game or redirect within /config/casino-dog.php.', json_encode($final_session_data));
             return CasinoDog::errorRouting(400, 'Bad request. Unsupported launcher behaviour specified.');
         }
-    } catch (\Exception $exception) {
+    } catch (\Throwable $exception) {
         $casino_dog = new CasinoDog();
-        $casino_dog->save_log('SessionsHandler', $exception->getMessage().' at line '.$exception->getLine().' in file '.$exception->getFile());
-        return CasinoDog::errorRouting(400, 'Error trying to retrieve origin game, please refresh.');
+
+        Log::error('SessionsHandler launch exception', [
+            'provider' => $select_extra_meta['provider'] ?? null,
+            'game_id' => $final_session_data['game_id_original'] ?? null,
+            'exception' => $exception->getMessage(),
+            'file' => $exception->getFile(),
+            'line' => $exception->getLine(),
+        ]);
+
+        $casino_dog->save_log(
+            'SessionsHandler',
+            $exception->getMessage().' at line '.$exception->getLine().' in file '.$exception->getFile()
+        );
+
+        return CasinoDog::errorRouting(
+            400,
+            'Game launch failed'.(isset($select_extra_meta['provider']) ? ' for provider '.$select_extra_meta['provider'] : '').'.'
+        );
     }
     }
 

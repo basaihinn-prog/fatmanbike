@@ -69,20 +69,40 @@ class RelaxgamingMain extends GameKernel
     public function dynamic_asset(string $asset_name, Request $request) 
     {
         if($asset_name === "config") {
-            $http = 'https://ns-2b7l.onrender.com/https://d2drhksbtcqozo.cloudfront.net/casino/games-mt/'.$request->gid.'/config.js';
-            $resp = ProxyHelperFacade::CreateProxy($request)->toUrl($http);
-            $new_api_endpoint = config('casino-dog.games.relax.new_api_endpoint').$request->internal_token.'/'.$request->gid.'/play';  // building up the api endpoint we want to receive game events upon
-            $content = str_replace('https://dev-casino-client.api.relaxg.net/game', $new_api_endpoint, $resp->getContent());
-            $content = str_replace('https://stag-casino-client.api.relaxg.net/game', $new_api_endpoint, $resp->getContent());
+            $asset_url = 'https://d2drhksbtcqozo.cloudfront.net/casino/games-mt/'
+                .$request->gid
+                .'/config.js';
+
+            $resp = ProxyHelperFacade::CreateProxy($request)->toUrl($asset_url);
+
+            if ($resp->getStatusCode() < 200 || $resp->getStatusCode() >= 400) {
+                abort(502, 'Relax config upstream HTTP '.$resp->getStatusCode());
+            }
+
+            $new_api_endpoint = config('casino-dog.games.relax.new_api_endpoint')
+                .$request->internal_token
+                .'/'
+                .$request->gid
+                .'/play';
+
+            $content = $resp->getContent();
+            $content = str_replace(
+                'https://dev-casino-client.api.relaxg.net/game',
+                $new_api_endpoint,
+                $content
+            );
+            $content = str_replace(
+                'https://stag-casino-client.api.relaxg.net/game',
+                $new_api_endpoint,
+                $content
+            );
             $content = str_replace('spinDelay: true', 'spinDelay: false', $content);
             $content = str_replace('en_GB', 'en_US', $content);
-            $content = str_replace('https://d3nsdzdtjbr5ml.cloudfront.net', 'https://ns-2b7l.onrender.com/https://d3nsdzdtjbr5ml.cloudfront.net', $content);
 
-            //$content = str_replace('spinDelay: false', 'google.com', $content);
-            //$content = str_replace('https://d3nsdzdtjbr5ml.cloudfront.net', 'https://02-gameserver.777.dog/', $content);           
-	    return response($content)->header('Content-Type', 'application/javascript');
-
+            return response($content, 200)
+                ->header('Content-Type', 'application/javascript; charset=utf-8');
         }
+
 
         if(str_contains($asset_name, 'getclientconfig_')) {
             $asset_url = 'https://iomeu-casino-client.api.relaxg.com/capi/1.0/casino/games/getclientconfig';

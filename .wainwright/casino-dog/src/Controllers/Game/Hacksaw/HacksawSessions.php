@@ -21,16 +21,37 @@ class HacksawSessions extends HacksawMain
     public function fresh_game_session($game_id, $method, $token_internal = NULL)
     {
         if($method === 'demo_method') {
-            $demo_link = $this->get_game_demolink($game_id);
+            $demo_link = (string) $this->get_game_demolink($game_id);
             $query = $this->parse_query($demo_link);
-            $url = str_replace('https://rgs-demo.hacksawgaming.com/api', env('APP_URL').'/api/games/hacksaw/'.$token_internal.'/'.$query['gameid'].'/play', $demo_link);
-            $url = str_replace('token=demo', 'token='.$token_internal, $url);
+            $origin_game_id = $query['gameid'] ?? null;
+
+            if (!$demo_link || !$origin_game_id) {
+                return false;
+            }
+
+            $base_url = rtrim(config('casino-dog.domain', env('APP_URL')), '/');
+            $internal_api = $base_url
+                .'/api/games/hacksaw/'
+                .rawurlencode($token_internal)
+                .'/'
+                .rawurlencode($origin_game_id)
+                .'/play';
+
+            $url = str_replace(
+                'https://rgs-demo.hacksawgaming.com/api',
+                $internal_api,
+                $demo_link
+            );
+            $url = str_replace('token=demo', 'token='.rawurlencode($token_internal), $url);
             $url = str_replace('mode=2', 'mode=0', $url);
 
-            $data = [
+            if ($url === $demo_link) {
+                return false;
+            }
+
+            return [
                 'link' => $url,
             ];
-            return $data;
         }
 
         // Add in additional grey methods here, specify the method on the internal session creation when a session is requested, don't split this here
@@ -59,6 +80,10 @@ class HacksawSessions extends HacksawMain
         $game_id = $select_session['data']['game_id_original'];
 
         $game = $this->fresh_game_session($game_id, 'demo_method', $token_internal);
+
+        if ($game === false) {
+            return false;
+        }
 
         $response = [
             'link' => $game['link'],

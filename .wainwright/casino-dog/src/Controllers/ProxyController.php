@@ -56,8 +56,17 @@ class ProxyController
      */
     public function retrieve_config()
     {
-        $sheet = Http::get(config('casino-dog.wainwright_proxy.config_url'));
-        $sheet = json_decode($sheet, true);
+        $configUrl = config('casino-dog.wainwright_proxy.config_url');
+        if(!$configUrl) {
+            return false;
+        }
+
+        $response = Http::connectTimeout(5)->timeout(10)->get($configUrl);
+        if(!$response->successful()) {
+            return false;
+        }
+
+        $sheet = $response->json();
         if(isset($sheet['proxy_entrypoints'])) {
         Cache::put('wainwright_proxy', $sheet, 15);
         return $sheet;
@@ -116,8 +125,24 @@ class ProxyController
         $session_url = Cache::get('wainwright_game_sessionproxy:'.$allowed_hosts);
         if(!$session_url) {
             $config = $this->configsheet();
+            if(!is_array($config) || !isset($config['proxy_entrypoints']['game_session_static']['create_session']['url'], $config['proxy_entrypoints']['game_session_static']['api_url'])) {
+                return false;
+            }
+
             $create_session_url = $config['proxy_entrypoints']['game_session_static']['create_session']['url'];
-            $create_session_http_client = json_decode(Http::withHeaders(['x-wainwright-allowedhosts' => $allowed_hosts])->timeout(10)->get($create_session_url), true);
+            $createSessionResponse = Http::withHeaders(['x-wainwright-allowedhosts' => $allowed_hosts])
+                ->connectTimeout(5)
+                ->timeout(10)
+                ->get($create_session_url);
+            if(!$createSessionResponse->successful()) {
+                return false;
+            }
+
+            $create_session_http_client = $createSessionResponse->json();
+            if(!is_array($create_session_http_client) || empty($create_session_http_client['session_id'])) {
+                return false;
+            }
+
             $session_id = $create_session_http_client['session_id'];
             $build_session_url = $config['proxy_entrypoints']['game_session_static']['api_url'];
             $session_url = str_replace('[session_id]', $session_id, $build_session_url);

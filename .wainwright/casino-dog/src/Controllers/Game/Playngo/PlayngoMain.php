@@ -99,41 +99,69 @@ class PlayngoMain extends GameKernel
     * @return void
     */
     public function dynamic_asset(string $asset_name, Request $request) {
-
-
-        if (str_contains($asset_name, 'GameLoader')) {
-            $url_query = explode('?', $request->fullUrl());
-            if(isset($url_query[1])) {
-
-                $token = explode(';', $asset_name);
-                $token = $token[1];
-                $select_session = $this->get_internal_session($token)['data'];
-                
-                $new_url = $_SERVER['REQUEST_URI'];
-                $new_url_explode = explode('?', $new_url)[1];
-                return 'https://wainwrighted.herokuapp.com/https://asccw.playngonetwork.com/Casino/GameLoader?'.$new_url_explode;
-                 $http = Http::get('https://wainwrighted.herokuapp.com/https://asccw.playngonetwork.com/Casino/../Casino/GameLoader?'.$new_url_explode);
-                //$http = Http::get('https://wainwrighted.herokuapp.com/https://asccw.playngonetwork.com/Casino/GameLoader?div=pngCasinoGame&pid=2&gid=bookofdead&lang=en_US&practice=1&demo=2&width=100%&height=100%&isbally=False&fullscreenmode=False&rccurrentsessiontime=0&rcintervaltime=0&autoplaylimits=0&autoplayreset=0&channel=desktop&callback=flashCallback&coreWebUrl=https://asccw.playngonetwork.com/&resourcelevel=0&hasJackpots=False&defaultsound=False&showPoweredBy=True');
-                $api_url = $this->in_between('this.configuration.server = "', '"', $http);
-                $new_api_endpoint = config('casino-dog.games.playngo.new_api_endpoint').$token.'/'.$select_session['game_id_original'].'/game_event';
-                $changed_content = str_replace('this.configuration.server = "'.$api_url, 'this.configuration.server = "'.$new_api_endpoint.'?original='.$api_url, $http);
-                $changed_content = str_replace('this.configuration.currency = ""', 'this.configuration.currency = "USD"', $changed_content);
-                //$changed_content = str_replace('window.StatsHandler = new StatsHandler("bookofdead", "desktop", "", StatsHandler.Megaton, "en_GB", "1", "1");', '', $changed_content);
-                //$changed_content = str_replace($api_url, $new_api_endpoint, $changed_content);
-		        //$changed_content = str_replace('//</script>', '', $changed_content);
-                //$changed_content = str_replace('//<script>', '', $changed_content);
-
-                echo $changed_content;
-            //$http = Http::get('https://fmtcw.playngonetwork.com/Casino/GameLoader?div=pngCasinoGame&pid=594&gid=aztecwarriorprincess&lang=en_US&practice=1&demo=2&isbally=False&fullscreenmode=False&rccurrentsessiontime=0&rcintervaltime=0&autoplaylimits=0&autoplayreset=0&channel=desktop&resourcelevel=0&hasJackpots=False&defaultsound=False&embedmode=iframe&origin=https://www.duxcasino.com&showPoweredBy=True');
-            } else {
-                $http = Http::get('https://ascflyp.playngonetwork.com/Casino/GameLoader');
-                return $http;
-
-            }
+        if (!str_contains($asset_name, 'GameLoader')) {
+            abort(404);
         }
 
+        $tokenParts = explode(';', $asset_name, 2);
+        $token = $tokenParts[1] ?? null;
 
+        if (!$token) {
+            abort(400, 'Missing Playngo session token.');
+        }
+
+        $session = $this->get_internal_session($token);
+        if (($session['status'] ?? null) !== 200) {
+            abort(404, 'Playngo session not found.');
+        }
+
+        $select_session = $session['data'];
+        $query = parse_url($request->fullUrl(), PHP_URL_QUERY);
+
+        if (!$query) {
+            abort(400, 'Missing Playngo GameLoader query.');
+        }
+
+        $originUrl = 'https://asccw.playngonetwork.com/Casino/GameLoader?'.$query;
+
+        $http = Http::connectTimeout(5)
+            ->timeout(20)
+            ->retry(1, 250)
+            ->get($originUrl);
+
+        if (!$http->successful()) {
+            abort(502, 'Playngo GameLoader upstream HTTP '.$http->status());
+        }
+
+        $content = $http->body();
+        $apiUrl = $this->in_between('this.configuration.server = "', '"', $content);
+
+        if (!$apiUrl) {
+            return response($content, 200)
+                ->header('Content-Type', 'application/javascript; charset=utf-8');
+        }
+
+        $newApiEndpoint = config('casino-dog.games.playngo.new_api_endpoint')
+            .$token.'/'
+            .$select_session['game_id_original']
+            .'/game_event';
+
+        $changedContent = str_replace(
+            'this.configuration.server = "'.$apiUrl,
+            'this.configuration.server = "'.$newApiEndpoint.'?original='.urlencode($apiUrl),
+            $content
+        );
+
+        $changedContent = str_replace(
+            'this.configuration.currency = ""',
+            'this.configuration.currency = "USD"',
+            $changedContent
+        );
+
+        return response($changedContent, 200)
+            ->header('Content-Type', 'application/javascript; charset=utf-8');
     }
+
 
     /*
     * fake_iframe_url() used to display as src in iframe, this is only visual. If you have access to game aggregation you should generate a working session with game provider.

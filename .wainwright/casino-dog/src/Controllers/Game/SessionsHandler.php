@@ -31,8 +31,6 @@ class SessionsHandler extends GameKernel
             $player_id = $select_session['data']['player_id'];
             $entry_securekey = CasinoDog::generate_sign($token);
             return redirect('/g?token='.$token.'&entry='.$entry_securekey.'&player_id='.$player_id);
-
-            return $this->session($token, $player_id, $entry_securekey, $request);
         }
 
     }
@@ -54,6 +52,7 @@ class SessionsHandler extends GameKernel
 
     public function session($token, $player_id, $entry_securekey, Request $request)
     {
+        $casino_dog = new CasinoDog();
         $agent = $request->header('user-agent');
         try {
 
@@ -194,7 +193,7 @@ class SessionsHandler extends GameKernel
         $player_id = $player_id['player_id'];
         */
         $player_id = hash_hmac('md5', $currency.'*'.$player_operator_id, $operator_key);
-        $invalidate_previous_init = self::invalidatePrev($player_operator_id, $operator_key);
+        $invalidate_previous_init = self::invalidatePrev($player_id);
         if($invalidate_previous_init === false) { // Return error, as for some reason we were unable to invalidate previous sessions
             $prepareResponse = array('status' => 'error', 'message' => 'Critical error, please contact your account manager ASAP. Try using different player_id.', 'request_ip' => $request_ip);
             return $prepareResponse;

@@ -44,7 +44,14 @@ Route::domain(config('casino-dog.hostname'))->group(function () {
 
 Route::middleware('api', 'throttle:15000,1')->prefix('api/games')->group(function () {
 Route::match(['get', 'post', 'head', 'patch', 'put', 'delete'] , '{provider}/{internal_token}/{slug}/{action}', function($provider, $internal_token, $slug, $action, Request $request) {
-        $game_controller = config('casino-dog.games.'.$provider.'.controller');
+        $provider_config = config('casino-dog.games.'.$provider);
+        $game_controller = is_array($provider_config) ? ($provider_config['controller'] ?? null) : null;
+        $provider_active = is_array($provider_config) ? (int) ($provider_config['active'] ?? 0) : 0;
+
+        if($provider_active !== 1 || !$game_controller || !class_exists($game_controller)) {
+            abort(404);
+        }
+
         $game_controller_kernel = new $game_controller;
         return $game_controller_kernel->game_event($request);
     })->where('slug', '([A-Za-z0-9_.\-\/]+)');
@@ -69,12 +76,26 @@ Route::middleware('web', 'throttle:15000,1')->prefix('dynamic_asset/')->group(fu
 
 # These routes will end up in game controller set within casino-dog/config.php and function dynamic_asset(), for example: PragmaticPlayMain::dynamic_asset().
     Route::match(['get', 'post', 'head', 'patch', 'put', 'delete'] , '{provider}/{asset_name}', function($provider, $asset_name, Request $request) {
-        $game_controller = config('casino-dog.games.'.$provider.'.controller');
+        $provider_config = config('casino-dog.games.'.$provider);
+        $game_controller = is_array($provider_config) ? ($provider_config['controller'] ?? null) : null;
+        $provider_active = is_array($provider_config) ? (int) ($provider_config['active'] ?? 0) : 0;
+
+        if($provider_active !== 1 || !$game_controller || !class_exists($game_controller)) {
+            abort(404);
+        }
+
         $game_controller_kernel = new $game_controller;
         return $game_controller_kernel->dynamic_asset($asset_name, $request);
     });
     Route::match(['get', 'post', 'head', 'patch', 'put', 'delete'] , '{provider}/{asset_name}/{slug}', function($provider, $asset_name, Request $request) {
-        $game_controller = config('casino-dog.games.'.$provider.'.controller');
+        $provider_config = config('casino-dog.games.'.$provider);
+        $game_controller = is_array($provider_config) ? ($provider_config['controller'] ?? null) : null;
+        $provider_active = is_array($provider_config) ? (int) ($provider_config['active'] ?? 0) : 0;
+
+        if($provider_active !== 1 || !$game_controller || !class_exists($game_controller)) {
+            abort(404);
+        }
+
         $game_controller_kernel = new $game_controller;
         return $game_controller_kernel->dynamic_asset($asset_name, $request);
     })->where('slug', '([A-Za-z0-9_.\-\/]+)');

@@ -173,7 +173,7 @@ class APIController
                 'session' => $session_create['message'],
                 'ably' => [
                     'channel' => $session_create['message']['data']['token_internal'],
-                    'key' => 'DnzkiQ.C6XmFg:IeY501QwXXAVDqIt6cOZCkjiXVbn0bD6ZJfi4Qsgzq8',
+                    'key' => config('services.ably.client_key'),
                 ],
             ];
 
@@ -361,7 +361,7 @@ class APIController
         }
 
         if($request->mode !== 'real') {
-            $prepareResponse = array('message' => 'Mode can only be \'demo\' or \'real\'.', 'request_ip' => $request->DogGetIP());
+            $prepareResponse = array('message' => 'Mode can only be \'real\'.', 'request_ip' => $request->DogGetIP());
             return $this->respondError($prepareResponse);
         }
         return $this->respondOk();

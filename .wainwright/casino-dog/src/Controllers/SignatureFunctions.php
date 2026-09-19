@@ -43,17 +43,19 @@ class SignatureFunctions
             $pwd = config('casino-dog.securitysalt');
         }
         try {
-            $explode_signature = explode('-', $signature);
+            $explode_signature = explode('-', $signature, 2);
+            if(count($explode_signature) !== 2 || !ctype_digit($explode_signature[1])) {
+                return false;
+            }
+
             $timestamp = $explode_signature[1];
-            $encryption_key =  $pwd.'-'.$timestamp;
+            $encryption_key = $pwd.'-'.$timestamp;
             $generate_sign = hash_hmac('md5', $token, $encryption_key);
             $concat_sign_time = $generate_sign.'-'.$timestamp;
-            if($signature === $concat_sign_time) { // verify signature is same outcome
-                return true;
-            }
-        } catch (\Exception $exception) {
+
+            return hash_equals($concat_sign_time, $signature);
+        } catch (\Throwable $exception) {
             return false;
         }
-        return false; //signature not matching, returning false
     }
 }

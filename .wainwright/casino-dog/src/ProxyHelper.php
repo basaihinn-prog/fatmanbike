@@ -76,13 +76,28 @@ class ProxyHelper {
         $defaultParams = [];
         if($info['method'] == 'GET')
             return $info['params'];
-        if($info['type'] == 'multipart')
+
+        if($info['type'] == 'multipart') {
             $defaultParams = $this->multipartParams;
-        else
-            $defaultParams = $info['params'];
-        if($info['query'])
-            foreach ($info['query'] as $key => $value)
-                unset($defaultParams[array_search(['name' => $key,'contents' => $value], $defaultParams)]);
+            if($info['query']) {
+                foreach ($info['query'] as $key => $value) {
+                    $index = array_search(['name' => $key, 'contents' => $value], $defaultParams, true);
+                    if($index !== false) {
+                        unset($defaultParams[$index]);
+                    }
+                }
+            }
+
+            return array_values($defaultParams);
+        }
+
+        $defaultParams = $info['params'];
+        if($info['query']) {
+            foreach (array_keys($info['query']) as $key) {
+                unset($defaultParams[$key]);
+            }
+        }
+
         return $defaultParams;
     }
     private function setAuth(PendingRequest $request, $currentAuth = null){
@@ -117,7 +132,7 @@ class ProxyHelper {
             case 'json':
                 return Http::asJson();
             case null:
-                return new PendingRequest();
+                return Http::withOptions([]);
             default:
             return Http::asJson();
         }
@@ -144,10 +159,12 @@ class ProxyHelper {
     }
 
     private function getRequestInfo(){
+        $contentType = (string) $this->originalRequest->header('Content-Type', '');
+
         return [
             'type' => ($this->originalRequest->isJson() ? 'json' :
-                    (strpos($this->originalRequest->header('Content-Type'),'multipart') !== false ? 'multipart' :
-                    ($this->originalRequest->header('Content-Type') == 'application/x-www-form-urlencoded' ? 'form' : $this->originalRequest->header('Content-Type')))),
+                    (strpos($contentType, 'multipart') !== false ? 'multipart' :
+                    ($contentType === 'application/x-www-form-urlencoded' ? 'form' : ($contentType ?: null)))),
             'agent' => $this->originalRequest->userAgent(),
             'method' => $this->originalRequest->method(),
             'token' => $this->originalRequest->bearerToken(),

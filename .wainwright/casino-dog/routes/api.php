@@ -10,7 +10,10 @@ Route::middleware('api', 'throttle:2400,1')->prefix('api')->group(function () {
     Route::get('/createSession', [APIController::class, 'createSessionEndpoint']);
     Route::get('/createSessionAndRedirect', [APIController::class, 'createSessionAndRedirectEndpoint']);
     Route::get('/createSessionIframed', [APIController::class, 'createSessionIframed']);
-    Route::get('/control/toggle_respin', [APIController::class, 'meepEndpoint']);
+    if (config('casino-dog.allow_result_mutation', false)) {
+        Route::get('/control/toggle_respin', [APIController::class, 'meepEndpoint']);
+    }
+
     Route::get('/control/add_freespins', [APIController::class, 'promotionsEndpoint']);
     Route::get('/accessPing', [APIController::class, 'accessPingEndpoint']);
   	Route::get('/gameslist/{layout}', [APIController::class, 'gamesListEndpoint']);

@@ -3,12 +3,12 @@
     return [
 
     'server_ip' => env('WAINWRIGHT_CASINODOG_SERVER_IP', '127.0.0.1'),
-    'securitysalt' => env('WAINWRIGHT_CASINODOG_SECURITY_SALT', 'AA61BED99602F187DA5D033D74D1A556'), // salt used for general signing of entry sessions and so on
+    'securitysalt' => env('WAINWRIGHT_CASINODOG_SECURITY_SALT', env('APP_KEY')), // salt used for general signing of entry sessions and so on
     'domain' => env('WAINWRIGHT_CASINODOG_DOMAIN', env('APP_URL')),
     'hostname' => env('WAINWRIGHT_CASINODOG_HOSTNAME', '777.dog'),
     'master_ip' => env('WAINWRIGHT_CASINODOG_MASTER_IP', '127.0.0.1'), // this IP should be your personal or whatever your testing on, this IP will surpass the Operator IP check
     'testing' => env('WAINWRIGHT_CASINODOG_TESTINGCONTROLLER', true), //set to false to hard override disable all tests through TestingController. When set to true and APP_DEBUG is set to true in .env, you can make use of TestingController
-    'cors_anywhere' => env('WAINWRIGHT_CASINODOG_CORSPROXY', 'https://wainwrighted.herokuapp.com/'), //corsproxy, should end with slash, download cors proxy: https://gitlab.com/casinoman/static-assets/cors-proxy
+    'cors_anywhere' => env('WAINWRIGHT_CASINODOG_CORSPROXY'), //corsproxy, should end with slash, download cors proxy: https://gitlab.com/casinoman/static-assets/cors-proxy
     'install_options' => [
         'installable' => env('WAINWRIGHT_CASINODOG_INSTALLABLE', "0"),
         'install_scaffold_operatorkey' => '0',
@@ -43,7 +43,7 @@
       'domain' => env('WAINWRIGHT_CASINODOG_WILDCARD', '.777.dog'), // use .DOMAIN.TLD syntax, for example: .777.dog when generating session will become https://d485649e-b239-4dad-ac2e-8ec5a756b504.777.dog
     ],
 
-    'urlscan_apikey' => '98a289d6-c886-446d-898f-9f99e352b850', // apikey is free for 5K reques ts per day at urlscan.io
+    'urlscan_apikey' => env('URLSCAN_API_KEY'), // apikey is free for 5K reques ts per day at urlscan.io
 
     /* Used retrieving and then storing game thumbnails on S3*/
     's3_image_store' => [

@@ -9,6 +9,8 @@
     'master_ip' => env('WAINWRIGHT_CASINODOG_MASTER_IP', '127.0.0.1'), // this IP should be your personal or whatever your testing on, this IP will surpass the Operator IP check
     'testing' => env('WAINWRIGHT_CASINODOG_TESTINGCONTROLLER', true), //set to false to hard override disable all tests through TestingController. When set to true and APP_DEBUG is set to true in .env, you can make use of TestingController
     'cors_anywhere' => env('WAINWRIGHT_CASINODOG_CORSPROXY'), //corsproxy, should end with slash, download cors proxy: https://gitlab.com/casinoman/static-assets/cors-proxy
+    'allow_result_mutation' => env('WAINWRIGHT_CASINODOG_ALLOW_RESULT_MUTATION', false),
+
     'install_options' => [
         'installable' => env('WAINWRIGHT_CASINODOG_INSTALLABLE', "0"),
         'install_scaffold_operatorkey' => '0',

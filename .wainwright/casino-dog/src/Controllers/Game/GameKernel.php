@@ -86,6 +86,11 @@ class GameKernel
             'game_data' => 'balance_call',
         ];
         $balance = OperatorsController::operatorCallbacks($internal_token, 'balance', $data);
+
+        if ($balance === false || $balance === null || !is_numeric($balance)) {
+            throw new \RuntimeException('Operator balance callback failed.');
+        }
+
         return (int) $balance;
     }
 
@@ -98,6 +103,11 @@ class GameKernel
             'game_data' => $game_data,
         ];
         $balance = OperatorsController::operatorCallbacks($internal_token, 'game', $data);
+
+        if ($balance === false || $balance === null || !is_numeric($balance)) {
+            throw new \RuntimeException('Operator game callback failed.');
+        }
+
         return (int) $balance;
     }
 

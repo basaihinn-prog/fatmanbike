@@ -23,9 +23,21 @@ class CasinoDogCreateSessionController
 
     public function create_session(string $game_slug, string $player_id, string $currency, string $mode)
     {
-        $build_session_url = $this->endpoint_create_session.'?game='.$game_slug.'&player='.$player_id.'&currency='.$currency.'&operator_key='.$this->operator_key.'&mode='.$mode;
-        $http = Http::get($build_session_url);
-        return $http;
+        if (!$this->endpoint_create_session || !$this->operator_key) {
+            throw new \RuntimeException('CasinoDog operator client is not configured.');
+        }
+
+        return Http::connectTimeout(3)
+            ->timeout(10)
+            ->retry(1, 150)
+            ->post($this->endpoint_create_session, [
+                'game' => $game_slug,
+                'player' => $player_id,
+                'currency' => $currency,
+                'operator_key' => $this->operator_key,
+                'mode' => $mode,
+            ])
+            ->throw();
     }
 
 

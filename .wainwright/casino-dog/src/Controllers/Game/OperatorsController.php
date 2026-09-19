@@ -33,7 +33,7 @@ class OperatorsController
 			if(!$operator_query) {
 				return false;
 			} else {
-				Cache::put('operatorByKey:'.$key, $operator_query, now()->addMinutes(15));
+				Cache::put($cacheKey, $operator_query, now()->addMinutes(15));
 			}
 		}
 		$response = array('status' => 'success', 'data' => $operator_query);
@@ -77,16 +77,20 @@ class OperatorsController
 				'action' => 'ping',
 				'salt_sign' => $salt_sign,
 			];
-			$http = Http::timeout(5)->get($find->callback_url, $query);
+			$http = Http::connectTimeout(3)->timeout(8)->retry(1, 150)->get($find->callback_url, $query);
 			$pong_hash = hash_hmac('md5', $find->operator_secret, $salt_sign);
-			$pong_hash_return = $http['data']['pong'];
+            if (!$http->successful()) {
+                return false;
+            }
+
+            $pong_hash_return = data_get($http->json(), 'data.pong');
 			if(!is_string($pong_hash_return) || !hash_equals($pong_hash, $pong_hash_return)) {
 				save_log('OperatorsController()', 'Error ping, secret hash has does not allign', json_encode(array('Ping' => $pong_hash, 'Pong return' => $pong_hash_return)));
 				return false;
 			}
 		}
 		} catch(\Exception $e) {
-			save_log('OperatorsController()', 'Error ping: '.$e->getMessage().' URL:'.$find->callback_url.'?action=ping&salt_sign='.$salt_sign);
+			save_log('OperatorsController()', 'Error ping: '.$e->getMessage());
 			return false;
 		}
 		$response = array('status' => 'success', 'data' => $find);
@@ -120,16 +124,29 @@ class OperatorsController
 				'sign' => hash_hmac('md5', $operator_details['data']['operator_secret'], $salt_sign),
 				'salt_sign' => $salt_sign,
 			];
-			$callback_build = $callback.'?'.http_build_query($query);
-			$http = Http::timeout(5)->get($callback_build);
-			if($http->status() !== 200) {
-				save_log('OperatorsController()', 'Error callback to '.$callback_build, json_encode($http));
+			$http = Http::connectTimeout(3)
+                ->timeout(8)
+                ->retry(1, 150)
+                ->get($callback, $query);
+
+			if(!$http->successful()) {
+				Log::warning('Operator balance callback failed.', [
+                    'status' => $http->status(),
+                    'operator_id' => $session['data']['operator_id'],
+                ]);
 				return false;
-			} else {
-				$decode = json_decode($http->getBody(), true);
-				save_log('OperatorsController()', 'Succesfull callback '.$callback_build, $http->getBody());
-				return $decode['data']['balance'];
 			}
+
+            $balance = data_get($http->json(), 'data.balance');
+
+            if (!is_numeric($balance)) {
+                Log::warning('Operator balance callback returned invalid schema.', [
+                    'operator_id' => $session['data']['operator_id'],
+                ]);
+                return false;
+            }
+
+			return (int) $balance;
 		} elseif($action === 'game') {
 			$salt_sign = Str::random(12);
 			$query = [
@@ -143,15 +160,29 @@ class OperatorsController
 				'win' => $game_data['win'],
 				'currency' => $session['data']['currency'],
 			];
-			$http = Http::timeout(5)->get($callback, $query);
+			$http = Http::connectTimeout(3)
+                ->timeout(8)
+                ->retry(1, 150)
+                ->get($callback, $query);
 
-			if($http->status() !== 200) {
-				Log::warning('Error callback to '.$callback.' with query'.json_encode($query));
+			if(!$http->successful()) {
+				Log::warning('Operator game callback failed.', [
+                    'status' => $http->status(),
+                    'operator_id' => $session['data']['operator_id'],
+                ]);
 				return false;
-			} else {
-				$decode = json_decode($http, true);
-				return $decode['data']['balance'];
 			}
+
+            $balance = data_get($http->json(), 'data.balance');
+
+            if (!is_numeric($balance)) {
+                Log::warning('Operator game callback returned invalid schema.', [
+                    'operator_id' => $session['data']['operator_id'],
+                ]);
+                return false;
+            }
+
+			return (int) $balance;
 		}
 		return $callback;
 	}

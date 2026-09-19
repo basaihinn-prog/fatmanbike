@@ -4,6 +4,7 @@ use \Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Wainwright\CasinoDogOperatorApi\Models\OperatorTransactions;
 
 class PlayerBalances extends Eloquent  {
@@ -30,27 +31,22 @@ class PlayerBalances extends Eloquent  {
 
     public function select_player($player_id, $currency)
     {
-        $player = self::where('player_id', $player_id)->first();
-
-        if(!$player) {
-            $player = $this->create_player($player_id, $currency);
-        }
-        return $player;
+        return self::firstOrCreate(
+            [
+                'player_id' => (string) $player_id,
+                'currency' => (string) $currency,
+            ],
+            [
+                'player_name' => (string) $player_id.'-name',
+                'balance' => (int) config('casino-dog-operator-api.test_settings.start_balance', 0),
+            ]
+        );
     }
 
 
     public function create_player($player_id, $currency)
     {
-        $data = [
-            'player_id' => $player_id,
-            'player_name' => $player_id.'-name',
-            'currency' => $currency,
-            'balance' => config('casino-dog-operator-api.test_settings.start_balance') ?? 0,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ];
-        self::insert($data);
-        return self::where('player_id', $player_id)->first();
+        return $this->select_player($player_id, $currency);
     }
 
     public function select_player_balance($player_id, $currency)
@@ -62,63 +58,82 @@ class PlayerBalances extends Eloquent  {
 
     public function process_game($player_id, $bet, $win, $currency, $game, $callback_request)
     {
-        $player = $this->select_player($player_id, $currency);
-        $balance = $player->balance;
+        $bet = (int) $bet;
+        $win = (int) $win;
 
-        if($bet > 0) {
-            if($bet > $balance) {
-                abort(400, 'Bet bigger then balance');
-            }
+        if ($bet < 0 || $win < 0) {
+            abort(422, 'Bet and win must be non-negative.');
         }
 
-        $balance = $this->select_player_balance($player_id, $currency);
-        $updateBalanceOnBet = (int) $balance - $bet;
-        $updateBalanceOnWin = (int) $updateBalanceOnBet + $win;
-        if($updateBalanceOnWin !== $balance) {
-            $amount = number_format((($updateBalanceOnWin - $balance) / 100), 2, '.', ' ');
-            $amount = str_replace('-', '', $amount);
-            if($updateBalanceOnWin > $balance) {
-                $data = array(
-                    "id" => rand(5000, 1021021012),
-                    "amount" => $amount,
-                    "currency" => $currency,
-                    "type" => "withdrawal",
-                    "player" => $player->player_id,
-                    "game" => $game,
-                    "data" => $callback_request,
-                );
+        return DB::transaction(function () use ($player_id, $bet, $win, $currency, $game, $callback_request) {
+            $player = self::where('player_id', $player_id)
+                ->where('currency', $currency)
+                ->lockForUpdate()
+                ->first();
 
-            } else {
-                $data = array(
-                    "id" => rand(5000, 1021021012),
-                    "amount" => $amount,
-                    "currency" => $currency,
-                    "type" => "deposit",
-                    "player" => $player->player_id,
-                    "game" => $game,
-                    "data" => $callback_request,
-                );
+            if (!$player) {
+                $player = $this->select_player($player_id, $currency);
+                $player = self::whereKey($player->getKey())->lockForUpdate()->first();
             }
-        }
-        $final = PlayerBalances::where('player_id', $player_id)->update(['balance' => $updateBalanceOnWin]);
 
-        return (int) $updateBalanceOnWin;
+            $balance = (int) $player->balance;
+
+            if ($bet > $balance) {
+                abort(400, 'Bet bigger than balance');
+            }
+
+            $newBalance = $balance - $bet + $win;
+
+            if ($newBalance < 0) {
+                abort(400, 'Balance cannot become negative.');
+            }
+
+            $player->balance = $newBalance;
+            $player->save();
+
+            return (int) $newBalance;
+        }, 3);
     }
+
 
     public function transfer_funds($player_id, $currency, $amount, $type)
     {
-        $balance = (int) $this->select_player_balance($player_id, $currency);
+        $amount = (int) $amount;
 
-        if($type === 'credit') {
-            $new_balance = (int) $balance + $amount;
-        } elseif($type === 'debit') {
-            $new_balance = (int) $balance - $amount;
+        if ($amount < 0) {
+            abort(422, 'Amount must be non-negative.');
         }
 
-        PlayerBalances::where('player_id', $player_id)->where('currency', $currency)->update(['balance' => $new_balance]);
-        return (int) $new_balance;
-    }
+        return DB::transaction(function () use ($player_id, $currency, $amount, $type) {
+            $player = self::where('player_id', $player_id)
+                ->where('currency', $currency)
+                ->lockForUpdate()
+                ->first();
 
+            if (!$player) {
+                $player = $this->select_player($player_id, $currency);
+                $player = self::whereKey($player->getKey())->lockForUpdate()->first();
+            }
+
+            $balance = (int) $player->balance;
+
+            if ($type === 'credit') {
+                $newBalance = $balance + $amount;
+            } elseif ($type === 'debit') {
+                if ($amount > $balance) {
+                    abort(400, 'Debit bigger than balance');
+                }
+                $newBalance = $balance - $amount;
+            } else {
+                abort(422, 'Unsupported transfer type.');
+            }
+
+            $player->balance = $newBalance;
+            $player->save();
+
+            return (int) $newBalance;
+        }, 3);
+    }
 
     
 

@@ -122,7 +122,7 @@ class OperatorsController
 			];
 			$callback_build = $callback.'?'.http_build_query($query);
 			$http = Http::timeout(5)->get($callback_build);
-			if(!$http->getStatusCode() === 200) {
+			if($http->status() !== 200) {
 				save_log('OperatorsController()', 'Error callback to '.$callback_build, json_encode($http));
 				return false;
 			} else {
@@ -145,7 +145,7 @@ class OperatorsController
 			];
 			$http = Http::timeout(5)->get($callback, $query);
 
-			if(!$http->status() === 200) {
+			if($http->status() !== 200) {
 				Log::warning('Error callback to '.$callback.' with query'.json_encode($query));
 				return false;
 			} else {
